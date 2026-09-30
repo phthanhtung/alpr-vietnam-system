@@ -1,0 +1,14 @@
+path: ./data/sample
+train: images
+val: images
+test: images
+
+nc: 1
+names: ['BienSoXe']
+
+roboflow:
+  workspace: thanh-tung-phan
+  project: biensoxe-o1lhe
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/thanh-tung-phan/biensoxe-o1lhe/dataset/1

@@ -1,0 +1,131 @@
+# ==============================================================================
+# Môi trường ảo Python & Cache
+# ==============================================================================
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+conda-env/
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==============================================================================
+# Quản lý cấu hình bí mật & Environment variables
+# ==============================================================================
+.env
+*.env
+.env.*
+!.env.example
+
+# ==============================================================================
+# Jupyter Notebooks
+# ==============================================================================
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# ==============================================================================
+# Dataset nặng & Dữ liệu (ALPR Data)
+# ==============================================================================
+data/dataset_vn_plates/
+data/raw/
+data/*
+!data/.gitkeep
+
+# Giữ lại thư mục mẫu
+!data/sample/
+!data/sample/**
+
+# File nén dataset
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Video & Raw Media files (test/samples)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# ==============================================================================
+# AI / ML Model Weights & Checkpoints
+# ==============================================================================
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.engine
+*.bin
+*.pkl
+*.h5
+*.weights
+*.safetensors
+
+# ==============================================================================
+# Cơ sở dữ liệu và thư mục sinh ra khi chạy (Tracking & DB)
+# ==============================================================================
+*.db
+*.sqlite3
+runs/
+wandb/
+mlruns/
+lightning_logs/
+
+# ==============================================================================
+# Logs & Temporary files
+# ==============================================================================
+logs/
+*.log
+tmp/
+temp/
+
+# ==============================================================================
+# IDEs & Editors
+# ==============================================================================
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+
+# ==============================================================================
+# Operating System
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
