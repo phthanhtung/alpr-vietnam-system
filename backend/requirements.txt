@@ -1,0 +1,19 @@
+# --- Web Framework & REST API ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+pydantic>=2.6.0
+
+# --- Database & ORM (PostgreSQL) ---
+sqlalchemy>=2.0.28
+psycopg2-binary>=2.9.9
+
+# --- Computer Vision & Deep Learning (YOLOv8) ---
+ultralytics>=8.1.0
+opencv-python-headless>=4.9.0.80
+numpy>=1.24.0,<2.0.0
+pillow>=10.2.0
+
+# --- OCR Engine (PaddleOCR) ---
+paddlepaddle>=2.6.0,<3.0.0
+paddleocr>=2.7.0,<3.0.0
