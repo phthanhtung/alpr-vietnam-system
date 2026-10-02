@@ -98,18 +98,19 @@ class ALPRPipeline:
         benchmark = LatencyBenchmark()
         benchmark.start()
 
-        # 1. Tiền xử lý (CLAHE)
-        processed_image = self.preprocessor.preprocess(input_data, use_clahe=use_clahe)
+        # 1. Tiền xử lý (Decode ảnh gốc và tạo bản CLAHE cho YOLO Detector)
+        raw_image = self.preprocessor.decode_image(input_data) if isinstance(input_data, bytes) else input_data.copy()
+        detector_image = self.preprocessor.apply_clahe(raw_image) if use_clahe else raw_image
         benchmark.record_preprocess()
 
-        # 2. Suy luận YOLOv8
-        raw_results = self.detector.detect(processed_image, conf=conf, iou=iou)
+        # 2. Suy luận YOLOv8 (trên ảnh đã tăng cường tương phản)
+        raw_results = self.detector.detect(detector_image, conf=conf, iou=iou)
         benchmark.record_inference()
 
-        # 3. Hậu xử lý & Cắt ROI
+        # 3. Hậu xử lý & Cắt ROI (cắt từ ảnh gốc nguyên bản để giữ nét chữ chuẩn cho OCR)
         detections: List[RawDetection] = self.postprocessor.extract_detections(
             raw_results,
-            processed_image,
+            raw_image,
             encode_crop=encode_crop
         )
         benchmark.record_postprocess()
