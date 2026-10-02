@@ -68,7 +68,7 @@ Minh chứng khoa học được lưu trữ tại thư mục `experiments/`:
 
 ## ⚙️ 3. QUY TRÌNH XỬ LÝ COMPUTER VISION (CV PIPELINE)
 
-Hệ thống tuân thủ nghiêm ngặt 4 giai đoạn xử lý Computer Vision cốt lõi:
+Hệ thống tuân thủ nghiêm ngặt 5 giai đoạn xử lý Computer Vision cốt lõi:
 
 ### 3.1. Tiền xử lý ảnh thích ứng (Image Preprocessing - `preprocessing.py`)
 * Không gian màu RGB/BGR trộn lẫn độ sáng và màu sắc. Khi tăng sáng thông thường sẽ làm biển số bị sai lệch màu (ví dụ biển vàng dịch vụ thành trắng).
@@ -78,16 +78,16 @@ Hệ thống tuân thủ nghiêm ngặt 4 giai đoạn xử lý Computer Vision 
 * Tải trọng số tùy chỉnh `backend/models/best.pt`.
 * Tinh chỉnh linh hoạt **Ngưỡng tin cậy (`CONF_THRESHOLD=0.25`)** để lọc bỏ nhiễu và **Ngưỡng NMS IoU (`IOU_THRESHOLD=0.45`)** để triệt tiêu các hộp bao trùng lặp trên cùng 1 biển số.
 
-### 3.3. Hậu xử lý & Cắt vùng biển số (Post-processing - `postprocessing.py`)
-* Thuật toán `crop_roi()` kết hợp **Boundary Checking** (chặn tọa độ âm / tràn viền ảnh) và **Padding 4px** xung quanh mép hộp bao để không bị xén mất nét chữ ngoài cùng.
-* Mã hóa ảnh crop sang **Base64 JPEG** để truyền tải qua REST API cho Frontend hiển thị.
+### 3.3. Kiến trúc Tách luồng Ảnh & Cắt ROI An toàn (Post-processing & Decoupled Flow)
+* **Tách luồng xử lý (Decoupled Flow):** Mô hình YOLO Detector sử dụng ảnh tăng cường CLAHE để bắt trọn biển số trong bóng tối. Tuy nhiên, vùng cắt biển số (ROI) được trích xuất trực tiếp từ **ảnh gốc nguyên bản (Clean Raw Image)** để tránh hiện tượng tương phản quá mức (halo/blooming) làm biến dạng độ dày nét chữ khi đưa vào OCR.
+* **Cắt ROI an toàn:** Thuật toán `crop_roi()` kết hợp **Boundary Checking** (chặn tọa độ âm / tràn viền ảnh) và **Padding 4px** xung quanh mép hộp bao để không bị xén mất nét chữ ngoài cùng.
 
-### 3.4. Nhận diện Ký tự & Phân loại Biển số VN (PaddleOCR - `ocr.py`)
-* Tích hợp **PaddleOCR 2.8.1 LTS** tối ưu cho chữ số và bảng chữ cái Latinh.
-* **Thuật toán sắp xếp không gian (Spatial Text Sorting):**
-  * **Biển dài 1 dòng (ô tô):** Sắp xếp các cụm chữ từ trái qua phải theo trục $X$.
-  * **Biển vuông 2 dòng (xe máy / ô tô):** Phân cụm vị trí tâm $Y$ thành 2 dòng (Dòng trên và Dòng dưới), sắp xếp từng dòng theo trục $X$ rồi ghép lại theo chuẩn `DòngTrên-DòngDưới` (VD: `59-D2-085.25`).
-  * **Sanitization:** Biểu thức chính quy `regex` lọc sạch các ký tự rác từ ốc vít, vết xước.
+### 3.4. Nhận diện Ký tự & Chuẩn hoá Biển số VN (PaddleOCR - `ocr.py`)
+* **Tự động nắn thẳng góc nghiêng 2-Pass (Adaptive Auto-Deskewing):** Tự động đo góc nghiêng của các hộp chữ số; nếu biển số bị chụp nghiêng (như các ca chéo góc $> 30^\circ$), hệ thống tự động sinh ma trận biến đổi phối cảnh (`cv2.warpAffine`) để xoay phẳng về $0^\circ$ và quét lại lần 2.
+* **Bộ lọc sửa lỗi nhầm lẫn quang học (Optical Character Disambiguation):** Tự động nhận diện cấu trúc vị trí để sửa các cặp ký tự dễ nhầm lẫn thị giác:
+  * 2 ký tự đầu: Ép về **Chữ số mã tỉnh** (`O, D, Q` $\to$ `0`, `I, L` $\to$ `1`, `B` $\to$ `8`...).
+  * Ký tự thứ 3 (ở biển xe máy 2 dòng): Ép về **Chữ cái sê-ri** (`0` $\to$ `D`, `8` $\to$ `B`, `1` $\to$ `T`...).
+  * Cụm ký tự đuôi: Ép về **Chữ số đăng ký** (`S` $\to$ `5`, `Z` $\to$ `2`...).
 
 ---
 
@@ -97,19 +97,19 @@ Số liệu đo lường thực tế đo bằng `time.perf_counter()` trên CPU 
 
 | Chặng Xử lý | Thời gian Trung bình ($ms$) | Tỷ trọng |
 | :--- | :---: | :---: |
-| **1. Tiền xử lý (CLAHE LAB)** | $\approx 90 - 95\text{ ms}$ | $5\%$ |
-| **2. Suy luận YOLOv8 (Inference)** | $\approx 1500 - 1650\text{ ms}$ | $78\%$ |
+| **1. Tiền xử lý (CLAHE LAB)** | $\approx 85 - 95\text{ ms}$ | $4.5\%$ |
+| **2. Suy luận YOLOv8 (Inference)** | $\approx 1450 - 1650\text{ ms}$ | $78.0\%$ |
 | **3. Hậu xử lý & Cắt ROI** | $\approx 1.0 - 1.5\text{ ms}$ | $< 0.1\%$ |
-| **4. Nhận diện PaddleOCR** | $\approx 250 - 330\text{ ms}$ | $17\%$ |
-| **Tổng thời gian Toàn trình ($T_{\text{total}}$)** | **$\approx 1850 - 2000\text{ ms}$** | **$100\%$** |
-| **Tốc độ khung hình (FPS trên CPU)** | **$\approx 0.50 - 0.54\text{ FPS}$** | *(Có thể đạt $ 30FPS khi bật GPU CUDA)* |
+| **4. Nhận diện PaddleOCR & Deskew** | $\approx 300 - 550\text{ ms}$ | $17.4\%$ |
+| **Tổng thời gian Toàn trình ($T_{\text{total}}$)** | **$\approx 1850 - 2200\text{ ms}$** | **$100\%$** |
+| **Tốc độ khung hình (FPS trên CPU)** | **$\approx 0.46 - 0.54\text{ FPS}$** | *(Đạt $> 30\text{ FPS}$ khi chạy trên GPU CUDA)* |
 
 ---
 
 ## 🛡️ 5. CHUẨN KỸ NGHỆ PHẦN MỀM
 
 * **Quản lý Phiên bản Git (Git-Flow):** 
-  * Phân nhánh rõ ràng: `main` (nhánh chính ổn định), `feature/layer-1-plate-detection` (tính năng CV), `ThanhTung` (nhánh phát triển).
+  * Phân nhánh rõ ràng: `main` (nhánh chính ổn định), `ThanhTung` (nhánh phát triển & tính năng).
 * **Quản lý Bí mật & Môi trường:** Toàn bộ tham số cấu hình tách biệt qua file `.env`, cung cấp file mẫu `.env.example`, chặn commit dữ liệu lớn và file nhạy cảm qua `.gitignore`.
 * **Khả năng Tái lập (Reproducibility):** Môi trường ảo Python độc lập (`venv`) quản lý qua `requirements.txt` chuẩn phiên bản (kế hoạch đóng gói container hóa Docker ở Tầng 2).
 * **Bảo mật cơ bản theo OWASP Top 10:**
@@ -134,7 +134,7 @@ alpr-vietnam-system/
 │   └── dataset_vn_plates/         # 1.262 ảnh train (được chặn bởi .gitignore)
 │
 ├── experiments/                   # Minh chứng số liệu khoa học từ Colab
-│   ├── results.png                # Đồ thị Loss & mAP qua 100 epochs
+│   ├── results.png                # Đồ thị Loss & mAP qua các epochs
 │   ├── confusion_matrix.png       # Ma trận nhầm lẫn
 │   ├── args.yaml                  # Siêu tham số huấn luyện
 │   └── results.csv                # Dữ liệu số thực nghiệm chi tiết từng epoch
@@ -147,7 +147,7 @@ alpr-vietnam-system/
     ├── test_local.py              # Script kiểm thử CLI nhanh trên terminal
     │
     ├── models/
-    │   └── best.pt                # Trọng số YOLOv8n đã huấn luyện
+    │   └── best.pt                # Trọng số YOLOv8n đã huấn luyện (6.25 MB)
     │
     └── src/
         ├── __init__.py
@@ -160,43 +160,83 @@ alpr-vietnam-system/
         │   └── detection.py       # Pydantic Schemas chuẩn hóa response JSON
         └── services/              # 5 Module Computer Vision cốt lõi
             ├── __init__.py
-            ├── preprocessing.py   # Tiền xử lý CLAHE trên kênh LAB L-channel
+            ├── preprocessing.py   # Tiền xử lý CLAHE trên kênh LAB & Auto-deskew
             ├── detector.py        # Suy luận YOLOv8 & cấu hình Conf/IoU NMS
             ├── postprocessing.py  # Bóc tách Bounding Box & Cắt ảnh ROI an toàn
-            ├── ocr.py             # PaddleOCR & Thuật toán ghép dòng biển số VN
+            ├── ocr.py             # PaddleOCR & Quy chuẩn ký tự biển số VN
             ├── benchmark.py       # Bấm giờ ms từng chặng & tính toán FPS
             └── pipeline.py        # Điều phối luồng xử lý End-to-End
 ```
 
 ---
 
-## 🚀 7. HƯỚNG DẪN CÀI ĐẶT & KHỞI CHẠY THỰC NGHIỆM
+## 🚀 7. HƯỚNG DẪN CÀI ĐẶT & CHẠY LOCAL (LOCAL QUICKSTART)
 
-### Bước 1: Khởi tạo môi trường ảo & Cài đặt thư viện
-```powershell
-# 1. Kích hoạt môi trường ảo
-.\venv\Scripts\activate
+### Bước 1: Chuẩn bị Môi trường ảo Python
 
-# 2. Cài đặt các thư viện cần thiết
+Khuyến nghị sử dụng **Python 3.10** hoặc **Python 3.11**.
+
+* **Trên Windows (PowerShell):**
+  ```powershell
+  # 1. Tạo môi trường ảo (nếu chưa có)
+  python -m venv venv
+
+  # 2. Kích hoạt môi trường ảo
+  .\venv\Scripts\Activate.ps1
+  ```
+
+* **Trên Linux / macOS:**
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+---
+
+### Bước 2: Cài đặt các thư viện phụ thuộc
+
+```bash
 pip install -r backend/requirements.txt
 ```
 
-### Bước 2: Chạy kiểm thử CLI nhanh trên Terminal
-```powershell
-# Chạy với ảnh mẫu bất kỳ trong thư mục data/sample/images/
-python backend/test_local.py --image "data/sample/images/biensoxe_oto.jpg"
+> ⚠️ *Lưu ý:* Dự án đã được ghim phiên bản ổn định `paddlepaddle==2.6.2` và `paddleocr==2.8.1` để tránh các lỗi xung đột trên môi trường CPU/Windows.
 
-# Tùy chỉnh tham số ngưỡng tin cậy (conf) hoặc tắt CLAHE để so sánh:
-python backend/test_local.py --image "data/sample/images/BienSoXe-20-_jpg.rf.5ea0fd8c424168c8364ffa85f4c525b2.jpg" --conf 0.3
+---
+
+### Bước 3: Chạy Kiểm thử Trực tiếp trên Terminal (CLI Test)
+
+Dự án cung cấp sẵn script [test_local.py](file:///c:/Code/alpr-vietnam-system/backend/test_local.py) để kiểm thử nhanh bất kỳ hình ảnh nào mà không cần bật server:
+
+```powershell
+# Chạy với ảnh mẫu xe máy có sẵn trong thư mục data/sample/
+python backend/test_local.py --image "data/sample/images/BienSoXe-24-_jpg.rf.bd68df5a62c6efacba7e928c792debb7.jpg"
 ```
 
-### Bước 3: Khởi chạy FastAPI Server (Swagger UI)
+#### Các tùy chọn nâng cao khi chạy CLI:
+| Tham số Flag | Mặc định | Ý nghĩa & Mô tả |
+| :--- | :---: | :--- |
+| `--image` | *(Bắt buộc)* | Đường dẫn đến file ảnh cần nhận diện |
+| `--model` | `backend/models/best.pt` | Đường dẫn file trọng số YOLOv8 |
+| `--conf` | `0.25` | Ngưỡng tin cậy phát hiện biển số ($0.0 \to 1.0$) |
+| `--iou` | `0.45` | Ngưỡng Non-Maximum Suppression (NMS) IoU |
+| `--no-clahe` | `False` | Tắt tiền xử lý cân bằng sáng CLAHE (để so sánh) |
+| `--no-ocr` | `False` | Chỉ chạy phát hiện hộp bao, bỏ qua bước đọc chữ |
+| `--save-crop` | `None` | Lưu ảnh cắt biển số (ROI) ra thư mục chỉ định |
+
+*Ví dụ chạy với ngưỡng tin cậy 0.3 và lưu ảnh cắt:*
+```powershell
+python backend/test_local.py --image "data/sample/images/BienSoXe-29-_jpg.rf.35b92896f83203ac79a5a4065091360c.jpg" --conf 0.3 --save-crop "experiments/crops"
+```
+
+---
+
+### Bước 4: Khởi chạy FastAPI Web Service (Tùy chọn)
+
 ```powershell
 uvicorn backend.src.main:app --reload --host 0.0.0.0 --port 8000
 ```
-Truy cập Swagger UI tại trình duyệt: `http://localhost:8000/docs`
+Truy cập giao diện tài liệu tương tác trực tiếp tại: **`http://localhost:8000/docs`**
 
-> 💡 *Lưu ý:* Việc đóng gói toàn bộ hệ thống bằng Docker & `docker-compose.yml` sẽ được hoàn thiện ở Tầng 2 khi tích hợp Database PostgreSQL và Frontend React.
 
 ---
 
