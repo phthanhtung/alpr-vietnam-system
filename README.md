@@ -1,7 +1,7 @@
 # 🚗 ALPR Vietnam System (Automatic License Plate Recognition)
 
 > **Hệ thống Nhận diện Biển số xe Việt Nam Tự động ứng dụng Deep Learning & Computer Vision**  
-> Đồ án môn học: *Công nghệ và Kỹ thuật Phần mềm Hiện đại*  
+> Đồ án môn học: *Các công nghệ lập trình hiện đại*  
 > **Kiến trúc:** YOLOv8 (Phát hiện biển số) + PaddleOCR (Nhận diện ký tự) + FastAPI REST Service
 
 ---
@@ -48,7 +48,7 @@ Hệ thống **ALPR Vietnam System** được thiết kế nhằm tự động h
 * **Dữ liệu mẫu kiểm thử nhanh:** Có sẵn trong thư mục `data/sample/images/` kèm file nhãn `data/sample/labels/` và cấu hình `data/sample/data.yaml`.
 
 ### 2.2. Số liệu Thực nghiệm Huấn luyện (Quantitative Metrics)
-Mô hình `YOLOv8n` được huấn luyện trên Google Colab qua 100 epochs với siêu tham số tối ưu:
+Mô hình `YOLOv8n` được huấn luyện trên Google Colab qua 60 epochs với siêu tham số tối ưu:
 
 | Chỉ số Đánh giá | Giá trị Đạt được | Ý nghĩa Khoa học |
 | :--- | :---: | :--- |
@@ -102,7 +102,7 @@ Số liệu đo lường thực tế đo bằng `time.perf_counter()` trên CPU 
 | **3. Hậu xử lý & Cắt ROI** | $\approx 1.0 - 1.5\text{ ms}$ | $< 0.1\%$ |
 | **4. Nhận diện PaddleOCR** | $\approx 250 - 330\text{ ms}$ | $17\%$ |
 | **Tổng thời gian Toàn trình ($T_{\text{total}}$)** | **$\approx 1850 - 2000\text{ ms}$** | **$100\%$** |
-| **Tốc độ khung hình (FPS trên CPU)** | **$\approx 0.50 - 0.54\text{ FPS}$** | *(Có thể đạt $\ge 30\text{ FPS}$ khi bật GPU CUDA)* |
+| **Tốc độ khung hình (FPS trên CPU)** | **$\approx 0.50 - 0.54\text{ FPS}$** | *(Có thể đạt $ 30FPS khi bật GPU CUDA)* |
 
 ---
 

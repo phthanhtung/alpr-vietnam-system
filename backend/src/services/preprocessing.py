@@ -48,3 +48,63 @@ class ImagePreprocessor:
             image = self.apply_clahe(image)
 
         return image
+
+    @staticmethod
+    def auto_deskew(image: np.ndarray, max_angle: float = 45.0) -> np.ndarray:
+        """Tự động ước lượng góc nghiêng và nắn thẳng ảnh biển số (Auto-Deskewing)."""
+        if image is None or image.size == 0:
+            return image
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Nhị phân hoá Otsu để tách biệt ký tự và viền biển số
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+        coords = np.column_stack(np.where(thresh > 0))
+        if len(coords) < 50:
+            return image
+
+        rect = cv2.minAreaRect(coords)
+        angle = rect[-1]
+
+        # Chuẩn hoá góc quay của OpenCV minAreaRect
+        if angle < -45:
+            angle = -(90 + angle)
+        elif angle > 45:
+            angle = 90 - angle
+        else:
+            angle = -angle
+
+        # Bỏ qua nếu góc lệch quá nhỏ (< 3 độ) hoặc quá lớn (> max_angle)
+        if abs(angle) < 3.0 or abs(angle) > max_angle:
+            return image
+
+        (h, w) = image.shape[:2]
+        center = (w // 2, h // 2)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(
+            image,
+            rotation_matrix,
+            (w, h),
+            flags=cv2.INTER_CUBIC,
+            borderMode=cv2.BORDER_REPLICATE
+        )
+        return rotated
+
+    @classmethod
+    def enhance_roi(cls, roi: np.ndarray, target_min_height: int = 100) -> np.ndarray:
+        """Tăng cường chất lượng vùng biển số (ROI): Phóng đại + nắn nghiêng."""
+        if roi is None or roi.size == 0:
+            return roi
+
+        enhanced = roi.copy()
+        h, w = enhanced.shape[:2]
+
+        # Nếu ROI quá nhỏ, phóng đại nội suy bậc 3 để làm nét ký tự
+        if h < target_min_height:
+            scale = target_min_height / float(h)
+            enhanced = cv2.resize(enhanced, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+
+        # Nắn thẳng góc nghiêng
+        enhanced = cls.auto_deskew(enhanced)
+        return enhanced
+
