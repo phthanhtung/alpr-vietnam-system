@@ -109,6 +109,7 @@ temp/
 # ==============================================================================
 .idea/
 .vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -129,3 +130,6 @@ temp/
 ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
+
+# Dependencies cài đặt cục bộ cho frontend
+frontend/node_modules/
