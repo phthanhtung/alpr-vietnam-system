@@ -130,3 +130,6 @@ temp/
 ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
+
+# Dependencies cài đặt cục bộ cho frontend
+frontend/node_modules/
